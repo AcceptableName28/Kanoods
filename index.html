@@ -3,206 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kanoodle Extreme Digital</title>
+    <title>Kanoodle Extreme Pro</title>
     <style>
-        :root { --bg: #121212; --panel: #1e1e1e; --accent: #00e5ff; }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
-        #app { display: flex; flex-direction: column; height: 100vh; align-items: center; }
+        :root { --bg: #0a0a0a; --panel: #1c1c1e; --accent: #32d74b; --bead-size: 32px; }
+        body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, sans-serif; overflow: hidden; touch-action: none; }
+        #app { display: flex; flex-direction: column; height: 100vh; }
         
-        .header { padding: 10px; width: 100%; text-align: center; background: var(--panel); box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-        .controls-top { display: flex; gap: 10px; padding: 10px; justify-content: center; }
-        
-        #game-canvas { background: #333; border-radius: 15px; box-shadow: inset 0 0 20px black; margin: 15px 0; }
-        
-        .footer-controls { width: 100%; padding: 15px; background: var(--panel); display: flex; justify-content: space-around; position: fixed; bottom: 0; }
-        
-        button { background: #444; color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-        button:active { background: var(--accent); color: black; }
-        select { background: #444; color: white; border: 1px solid var(--accent); padding: 8px; border-radius: 5px; }
+        /* UI Elements */
+        .header { padding: 12px; background: var(--panel); border-bottom: 1px solid #333; text-align: center; }
+        .level-label { font-size: 12px; color: #888; margin-bottom: 4px; display: block; }
+        select { background: #2c2c2e; color: white; border: 1px solid #444; padding: 10px; border-radius: 8px; width: 90%; font-size: 16px; }
 
-        .piece-tray { display: flex; overflow-x: auto; width: 100%; gap: 10px; padding: 10px; background: #252525; }
-        .tray-item { min-width: 60px; height: 60px; background: #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; border: 2px solid #555; }
+        /* The Board */
+        #game-view { flex: 1; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #222 0%, #000 100%); position: relative; }
+        #board-svg { filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8)); }
+        .slot { fill: #1a1a1a; stroke: #333; stroke-width: 2; }
+        .slot.highlight { stroke: var(--accent); stroke-width: 3; }
+
+        /* Piece Tray */
+        .tray-label { padding: 8px 15px; font-size: 13px; color: #aaa; background: #111; }
+        .tray { height: 140px; background: var(--panel); display: flex; overflow-x: auto; padding: 10px; gap: 20px; border-top: 1px solid #333; align-items: center; }
+        .tray-item { min-width: 90px; height: 100px; background: #2c2c2e; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; border: 1px solid #444; }
+        .tray-item.selected { border-color: var(--accent); background: #3a3a3c; }
+        .piece-id { position: absolute; top: 5px; left: 8px; font-size: 10px; color: #666; font-weight: bold; }
+
+        /* Action Bar */
+        .actions { display: flex; justify-content: space-around; padding: 15px; background: var(--panel); border-top: 1px solid #333; }
+        button { background: #3a3a3c; color: white; border: none; padding: 12px 25px; border-radius: 10px; font-weight: 600; font-size: 14px; transition: 0.2s; }
+        button:active { transform: scale(0.95); opacity: 0.8; }
+        button.primary { background: var(--accent); color: black; }
+        button.danger { background: #ff453a; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div class="header">
-        <strong>KANOODLE EXTREME</strong>
-        <div class="controls-top">
-            <select id="levelSelector" onchange="loadLevel(this.value)">
-                <option value="empty">Free Play (Empty Board)</option>
-                <option value="puzzle1">Puzzle 1 (Beginner)</option>
-                <option value="puzzle9">Puzzle 9 (Intermediate)</option>
-                <option value="sliding1A">Sliding Challenge 1A</option>
-            </select>
-        </div>
+        <span class="level-label">CHOOSE YOUR CHALLENGE</span>
+        <select id="levelSelector" onchange="game.loadLevel(this.value)">
+            <optgroup label="Beginner 2-D (Page 8)">
+                <option value="p1">Puzzle 1 (11 Pieces Fixed)</option>
+                <option value="p5">Puzzle 5 (9 Pieces Fixed)</option>
+                <option value="p8">Puzzle 8 (7 Pieces Fixed)</option>
+            </optgroup>
+            <optgroup label="Intermediate 2-D (Page 9)">
+                <option value="p9">Puzzle 9</option>
+                <option value="p13">Puzzle 13</option>
+            </optgroup>
+            <optgroup label="Sliding 2-D (Page 5)">
+                <option value="s1a">Sliding 1A (5 Pieces)</option>
+                <option value="s1e">Sliding 1E (9 Pieces)</option>
+            </optgroup>
+        </select>
     </div>
 
-    <canvas id="game-canvas"></canvas>
+    <div id="game-view">
+        <svg id="board-svg" width="350" height="170" viewBox="0 0 350 170"></svg>
+    </div>
 
-    <div class="piece-tray" id="tray">
-        </div>
+    <div class="tray-label">REMAINING NOODLES</div>
+    <div class="tray" id="tray"></div>
 
-    <div class="footer-controls">
-        <button onclick="undo()">Undo</button>
-        <button onclick="redo()">Redo</button>
-        <button onclick="restart()" style="background: #d32f2f;">Restart</button>
-        <button onclick="rotateCurrent()" style="background: var(--accent); color: black;">Rotate</button>
+    <div class="actions">
+        <button onclick="game.undo()">Undo</button>
+        <button class="primary" onclick="game.transformPiece()">Rotate / Flip</button>
+        <button class="danger" onclick="game.resetBoard()">Restart</button>
     </div>
 </div>
 
 <script>
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    const tray = document.getElementById('tray');
-    
-    // Board config: 5x11 for 2D Kanoodle Extreme
-    const ROWS = 5, COLS = 11;
-    let cellSize = 0;
-    let history = [];
-    let redoStack = [];
-    let board = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+[span_2](start_span)// Official Noodle Shapes from Guide[span_2](end_span)
+const NOODLES = {
+    'A': { color: '#FFD700', shape: [[0,0], [1,0], [0,1]] },
+    'B': { color: '#FF3B30', shape: [[0,0], [1,0], [0,1], [1,1]] },
+    'C': { color: '#4CD964', shape: [[0,0], [1,0], [2,0], [0,1]] },
+    'D': { color: '#5AC8FA', shape: [[0,0], [1,0], [2,0], [3,0]] },
+    'E': { color: '#AF52DE', shape: [[0,0], [1,0], [2,0], [1,1], [1,2]] },
+    'F': { color: '#FF9500', shape: [[0,0], [1,0], [2,0], [3,0], [0,1]] },
+    'G': { color: '#5856D6', shape: [[0,0], [1,0], [2,0], [1,1], [2,1]] },
+    'H': { color: '#FF2D55', shape: [[0,0], [1,0], [2,0], [0,1], [2,1]] },
+    'I': { color: '#007AFF', shape: [[0,0], [1,0], [1,1], [2,1], [2,2]] },
+    'J': { color: '#8E8E93', shape: [[1,0], [0,1], [1,1], [2,1], [1,2]] },
+    'K': { color: '#C69C6D', shape: [[0,0], [0,1], [1,1], [1,2], [2,2]] },
+    'L': { color: '#E5E5EA', shape: [[0,0], [1,0], [2,0], [3,0], [4,0]] }
+};
 
-    // Piece Definitions (Coordinates of beads)
-    const PIECES = {
-        'A': { color: '#FF5252', shape: [[0,0], [1,0], [0,1]] }, // 3 beads
-        'B': { color: '#FF4081', shape: [[0,0], [1,0], [2,0], [3,0]] }, // 4 beads
-        'C': { color: '#E040FB', shape: [[0,0], [1,0], [2,0], [1,1]] },
-        'D': { color: '#7C4DFF', shape: [[0,0], [1,0], [0,1], [1,1]] },
-        'E': { color: '#536DFE', shape: [[0,0], [1,0], [2,0], [2,1], [2,2]] }, // 5 beads
-        'F': { color: '#448AFF', shape: [[0,0], [1,0], [2,0], [0,1], [0,2]] },
-        'G': { color: '#40C4FF', shape: [[0,0], [1,0], [2,0], [1,1], [1,2]] },
-        'H': { color: '#18FFFF', shape: [[0,0], [1,0], [0,1], [-1,1], [-1,2]] },
-        'I': { color: '#64FFDA', shape: [[0,0], [1,0], [2,0], [3,0], [0,1]] },
-        'J': { color: '#B2FF59', shape: [[0,0], [0,1], [1,1], [2,1], [0,2]] },
-        'K': { color: '#EEFF41', shape: [[0,0], [1,0], [2,0], [1,1], [2,1]] },
-        'L': { color: '#FFD740', shape: [[0,0], [1,0], [1,1], [2,1], [3,1]] }
-    };
+[span_3](start_span)[span_4](start_span)// Level Data based on PDF Diagrams[span_3](end_span)[span_4](end_span)
+const LEVELS = {
+    'p1': { fixed: [['L',[0,0]], ['K',[0,5]], ['F',[0,7]], ['H',[1,8]], ['G',[2,0]], ['D',[3,0]], ['A',[4,2]], ['B',[4,4]], ['C',[4,6]], ['I',[4,8]], ['J',[4,10]]] },
+    'p9': { fixed: [['B',[0,0]], ['C',[0,1]], ['E',[1,1]], ['I',[1,4]]] },
+    's1a': { pool: ['B','A','L','J','D'] }
+};
 
-    let selectedPiece = null;
-    let rotation = 0;
-
-    function init() {
-        resize();
-        window.addEventListener('resize', resize);
-        render();
-        updateTray();
+class KanoodleEngine {
+    constructor() {
+        this.board = Array(5).fill().map(() => Array(11).fill(null));
+        this.selectedId = null;
+        this.history = [];
+        this.init();
     }
 
-    function resize() {
-        const padding = 40;
-        cellSize = Math.min((window.innerWidth - padding) / COLS, (window.innerHeight / 2.5) / ROWS);
-        canvas.width = COLS * cellSize;
-        canvas.height = ROWS * cellSize;
-        render();
-    }
-
-    function render() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw empty slots (Circular based)
-        for (let r = 0; r < ROWS; r++) {
-            for (let c = 0; c < COLS; c++) {
-                ctx.beginPath();
-                ctx.arc(c * cellSize + cellSize/2, r * cellSize + cellSize/2, cellSize/2.5, 0, Math.PI * 2);
-                ctx.fillStyle = board[r][c] ? PIECES[board[r][c]].color : '#444';
-                ctx.fill();
-                ctx.strokeStyle = '#222';
-                ctx.stroke();
+    init() {
+        const svg = document.getElementById('board-svg');
+        for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 11; c++) {
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", c * 31 + 20);
+                circle.setAttribute("cy", r * 31 + 20);
+                circle.setAttribute("r", 13);
+                circle.setAttribute("class", "slot");
+                circle.dataset.pos = `${r},${c}`;
+                circle.onclick = () => this.handleBoardTouch(r, c);
+                svg.appendChild(circle);
             }
         }
+        this.refreshUI();
     }
 
-    function updateTray() {
+    handleBoardTouch(r, c) {
+        if (this.selectedId) {
+            if (this.canPlace(this.selectedId, r, c)) {
+                this.saveState();
+                this.place(this.selectedId, r, c);
+                this.selectedId = null;
+            }
+        } else if (this.board[r][c]) {
+            this.saveState();
+            this.selectedId = this.board[r][c];
+            this.remove(this.selectedId);
+        }
+        this.refreshUI();
+    }
+
+    canPlace(id, r, c) {
+        return NOODLES[id].shape.every(([dr, dc]) => {
+            const nr = r + dr, nc = c + dc;
+            return nr >= 0 && nr < 5 && nc >= 0 && nc < 11 && !this.board[nr][nc];
+        });
+    }
+
+    place(id, r, c) { NOODLES[id].shape.forEach(([dr, dc]) => this.board[r+dr][c+dc] = id); }
+    remove(id) { for(let r=0; r<5; r++) for(let c=0; c<11; c++) if(this.board[r][c]===id) this.board[r][c]=null; }
+
+    transformPiece() {
+        if (!this.selectedId) return;
+        // Rotation logic: (r, c) -> (c, -r)
+        NOODLES[this.selectedId].shape = NOODLES[this.selectedId].shape.map(([r, c]) => [c, -r]);
+        this.refreshUI();
+    }
+
+    refreshUI() {
+        // Update Board
+        document.querySelectorAll('.slot').forEach(s => {
+            const [r, c] = s.dataset.pos.split(',').map(Number);
+            const id = this.board[r][c];
+            s.style.fill = id ? NOODLES[id].color : "#1a1a1a";
+            s.style.stroke = id ? "white" : "#333";
+        });
+
+        // Update Tray
+        const tray = document.getElementById('tray');
         tray.innerHTML = '';
-        Object.keys(PIECES).forEach(key => {
-            const isUsed = board.flat().includes(key);
-            if (!isUsed) {
-                const div = document.createElement('div');
-                div.className = 'tray-item';
-                div.innerText = key;
-                div.style.color = PIECES[key].color;
-                div.onclick = () => selectPieceFromTray(key);
-                tray.appendChild(div);
+        const used = new Set(this.board.flat());
+        
+        Object.keys(NOODLES).forEach(id => {
+            if (!used.has(id)) {
+                const item = document.createElement('div');
+                item.className = `tray-item ${this.selectedId === id ? 'selected' : ''}`;
+                item.innerHTML = `<span class="piece-id">${id}</span><svg width="60" height="60" viewBox="-10 -10 100 100">${this.drawMini(id)}</svg>`;
+                item.onclick = () => { this.selectedId = (this.selectedId === id) ? null : id; this.refreshUI(); };
+                tray.appendChild(item);
             }
         });
     }
 
-    function selectPieceFromTray(key) {
-        selectedPiece = key;
-        alert("Selected piece " + key + ". Now tap the board to place it!");
+    drawMini(id) {
+        return NOODLES[id].shape.map(([r, c]) => 
+            `<circle cx="${c*18+20}" cy="${r*18+20}" r="8" fill="${NOODLES[id].color}" stroke="white" stroke-width="1"/>`
+        ).join('');
     }
 
-    canvas.addEventListener('touchstart', (e) => {
-        if (!selectedPiece) return;
-        const rect = canvas.getBoundingClientRect();
-        const touch = e.touches[0];
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        const col = Math.floor(x / cellSize);
-        const row = Math.floor(y / cellSize);
-        
-        placePieceOnBoard(selectedPiece, row, col);
-    });
-
-    function placePieceOnBoard(key, r, c) {
-        saveState();
-        // Simplified placement: toggle piece at single bead for mobile demo
-        // In a full version, this would check the full 'shape' array
-        if (board[r][c] === key) board[r][c] = null;
-        else board[r][c] = key;
-        
-        selectedPiece = null;
-        render();
-        updateTray();
+    loadLevel(key) {
+        this.resetBoard();
+        const lvl = LEVELS[key];
+        if (lvl.fixed) lvl.fixed.forEach(([id, pos]) => this.place(id, pos[0], pos[1]));
+        this.refreshUI();
     }
 
-    function saveState() {
-        history.push(JSON.parse(JSON.stringify(board)));
-        redoStack = [];
-    }
+    saveState() { this.history.push(JSON.stringify(this.board)); }
+    undo() { if(this.history.length) { this.board = JSON.parse(this.history.pop()); this.refreshUI(); } }
+    resetBoard() { this.board = Array(5).fill().map(() => Array(11).fill(null)); this.history = []; this.refreshUI(); }
+}
 
-    function undo() {
-        if (history.length > 0) {
-            redoStack.push(JSON.parse(JSON.stringify(board)));
-            board = history.pop();
-            render();
-            updateTray();
-        }
-    }
-
-    function redo() {
-        if (redoStack.length > 0) {
-            history.push(JSON.parse(JSON.stringify(board)));
-            board = redoStack.pop();
-            render();
-            updateTray();
-        }
-    }
-
-    function restart() {
-        if (confirm("Reset the board?")) {
-            board = Array(ROWS).fill().map(() => Array(COLS).fill(null));
-            history = [];
-            redoStack = [];
-            render();
-            updateTray();
-        }
-    }
-
-    function loadLevel(val) {
-        restart();
-        if (val === 'puzzle1') {
-            // Starter setup for Puzzle 1 (11 pieces fixed)
-            board[0][0] = 'A'; board[0][1] = 'A'; board[0][2] = 'A';
-            board[1][3] = 'A';
-        }
-        render();
-        updateTray();
-    }
-
-    init();
+const game = new KanoodleEngine();
 </script>
 </body>
 </html>
