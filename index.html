@@ -3,57 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kanoodle Extreme Pro</title>
+    <title>Kanoodle Extreme: 1-50 Selectable</title>
     <style>
-        :root { --bg: #0a0a0a; --panel: #1c1c1e; --accent: #32d74b; --bead-size: 32px; }
+        :root { --bg: #0d0d0d; --panel: #1c1c1e; --accent: #00d2ff; }
         body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, sans-serif; overflow: hidden; touch-action: none; }
         #app { display: flex; flex-direction: column; height: 100vh; }
         
-        /* UI Elements */
-        .header { padding: 12px; background: var(--panel); border-bottom: 1px solid #333; text-align: center; }
-        .level-label { font-size: 12px; color: #888; margin-bottom: 4px; display: block; }
-        select { background: #2c2c2e; color: white; border: 1px solid #444; padding: 10px; border-radius: 8px; width: 90%; font-size: 16px; }
+        /* Header & Selector */
+        .header { padding: 15px; background: var(--panel); border-bottom: 1px solid #333; text-align: center; }
+        select { background: #2c2c2e; color: white; border: 1px solid var(--accent); padding: 12px; border-radius: 8px; width: 90%; font-size: 16px; outline: none; }
 
         /* The Board */
         #game-view { flex: 1; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #222 0%, #000 100%); position: relative; }
-        #board-svg { filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8)); }
-        .slot { fill: #1a1a1a; stroke: #333; stroke-width: 2; }
-        .slot.highlight { stroke: var(--accent); stroke-width: 3; }
+        #board-svg { filter: drop-shadow(0 8px 15px rgba(0,0,0,0.7)); touch-action: none; }
+        .slot { fill: #1a1a1a; stroke: #444; stroke-width: 2; cursor: pointer; }
+        .slot:hover { stroke: var(--accent); }
 
-        /* Piece Tray */
-        .tray-label { padding: 8px 15px; font-size: 13px; color: #aaa; background: #111; }
-        .tray { height: 140px; background: var(--panel); display: flex; overflow-x: auto; padding: 10px; gap: 20px; border-top: 1px solid #333; align-items: center; }
-        .tray-item { min-width: 90px; height: 100px; background: #2c2c2e; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; border: 1px solid #444; }
-        .tray-item.selected { border-color: var(--accent); background: #3a3a3c; }
-        .piece-id { position: absolute; top: 5px; left: 8px; font-size: 10px; color: #666; font-weight: bold; }
+        /* Remaining Noodles Tray */
+        .tray-header { padding: 8px 15px; font-size: 12px; color: #888; background: #111; text-transform: uppercase; letter-spacing: 1px; }
+        .tray { height: 130px; background: var(--panel); display: flex; overflow-x: auto; padding: 10px; gap: 15px; border-top: 1px solid #333; align-items: center; }
+        .tray-item { min-width: 80px; height: 100px; background: #2c2c2e; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; transition: 0.2s; }
+        .tray-item.selected { border-color: var(--accent); background: #3a3a3c; transform: translateY(-5px); }
 
-        /* Action Bar */
+        /* Controls */
         .actions { display: flex; justify-content: space-around; padding: 15px; background: var(--panel); border-top: 1px solid #333; }
-        button { background: #3a3a3c; color: white; border: none; padding: 12px 25px; border-radius: 10px; font-weight: 600; font-size: 14px; transition: 0.2s; }
-        button:active { transform: scale(0.95); opacity: 0.8; }
-        button.primary { background: var(--accent); color: black; }
-        button.danger { background: #ff453a; }
+        button { background: #3a3a3c; color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; flex: 1; margin: 0 5px; }
+        button.primary { background: var(--accent); color: #000; }
+        button.danger { background: #ff3b30; }
     </style>
 </head>
 <body>
 
 <div id="app">
     <div class="header">
-        <span class="level-label">CHOOSE YOUR CHALLENGE</span>
         <select id="levelSelector" onchange="game.loadLevel(this.value)">
-            <optgroup label="Beginner 2-D (Page 8)">
-                <option value="p1">Puzzle 1 (11 Pieces Fixed)</option>
-                <option value="p5">Puzzle 5 (9 Pieces Fixed)</option>
-                <option value="p8">Puzzle 8 (7 Pieces Fixed)</option>
-            </optgroup>
-            <optgroup label="Intermediate 2-D (Page 9)">
-                <option value="p9">Puzzle 9</option>
-                <option value="p13">Puzzle 13</option>
-            </optgroup>
-            <optgroup label="Sliding 2-D (Page 5)">
-                <option value="s1a">Sliding 1A (5 Pieces)</option>
-                <option value="s1e">Sliding 1E (9 Pieces)</option>
-            </optgroup>
+            <option value="empty">Free Play / Reset</option>
+            <optgroup id="puzzles-1-50" label="2-D Puzzles (1-50)"></optgroup>
         </select>
     </div>
 
@@ -61,7 +46,7 @@
         <svg id="board-svg" width="350" height="170" viewBox="0 0 350 170"></svg>
     </div>
 
-    <div class="tray-label">REMAINING NOODLES</div>
+    <div class="tray-header">Remaining Noodles</div>
     <div class="tray" id="tray"></div>
 
     <div class="actions">
@@ -72,7 +57,7 @@
 </div>
 
 <script>
-[span_2](start_span)// Official Noodle Shapes from Guide[span_2](end_span)
+[span_5](start_span)// Official Piece Shapes based on 12-Noodle Set[span_5](end_span)
 const NOODLES = {
     'A': { color: '#FFD700', shape: [[0,0], [1,0], [0,1]] },
     'B': { color: '#FF3B30', shape: [[0,0], [1,0], [0,1], [1,1]] },
@@ -88,11 +73,11 @@ const NOODLES = {
     'L': { color: '#E5E5EA', shape: [[0,0], [1,0], [2,0], [3,0], [4,0]] }
 };
 
-[span_3](start_span)[span_4](start_span)// Level Data based on PDF Diagrams[span_3](end_span)[span_4](end_span)
-const LEVELS = {
-    'p1': { fixed: [['L',[0,0]], ['K',[0,5]], ['F',[0,7]], ['H',[1,8]], ['G',[2,0]], ['D',[3,0]], ['A',[4,2]], ['B',[4,4]], ['C',[4,6]], ['I',[4,8]], ['J',[4,10]]] },
-    'p9': { fixed: [['B',[0,0]], ['C',[0,1]], ['E',[1,1]], ['I',[1,4]]] },
-    's1a': { pool: ['B','A','L','J','D'] }
+[span_6](start_span)[span_7](start_span)[span_8](start_span)// Puzzle Database (Samples from Page 8-13)[span_6](end_span)[span_7](end_span)[span_8](end_span)
+const PUZZLE_DATA = {
+    'p1': [['L',[0,0]], ['K',[0,5]], ['F',[0,7]], ['H',[1,8]], ['G',[2,0]], ['D',[3,0]], ['A',[4,2]], ['B',[4,4]], ['C',[4,6]], ['I',[4,8]], ['J',[4,10]]],
+    'p9': [['B',[0,0]], ['C',[0,1]], ['E',[1,1]], ['I',[1,4]]],
+    'p13': [['D',[0,0]], ['G',[1,0]], ['L',[1,3]], ['K',[1,4]], ['I',[0,4]], ['B',[3,0]], ['E',[3,3]]]
 };
 
 class KanoodleEngine {
@@ -104,13 +89,23 @@ class KanoodleEngine {
     }
 
     init() {
+        // Build Select Menu 1-50
+        const menu = document.getElementById('puzzles-1-50');
+        for(let i=1; i<=50; i++) {
+            const opt = document.createElement('option');
+            opt.value = 'p' + i;
+            opt.innerText = 'Puzzle ' + i + (i < 9 ? ' (Beginner)' : ' (Intermediate)');
+            menu.appendChild(opt);
+        }
+
+        // Draw Board
         const svg = document.getElementById('board-svg');
         for (let r = 0; r < 5; r++) {
             for (let c = 0; c < 11; c++) {
                 const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 circle.setAttribute("cx", c * 31 + 20);
                 circle.setAttribute("cy", r * 31 + 20);
-                circle.setAttribute("r", 13);
+                circle.setAttribute("r", 13.5);
                 circle.setAttribute("class", "slot");
                 circle.dataset.pos = `${r},${c}`;
                 circle.onclick = () => this.handleBoardTouch(r, c);
@@ -126,6 +121,8 @@ class KanoodleEngine {
                 this.saveState();
                 this.place(this.selectedId, r, c);
                 this.selectedId = null;
+            } else {
+                alert("Can't place here! Piece overlaps or is out of bounds.");
             }
         } else if (this.board[r][c]) {
             this.saveState();
@@ -147,21 +144,23 @@ class KanoodleEngine {
 
     transformPiece() {
         if (!this.selectedId) return;
-        // Rotation logic: (r, c) -> (c, -r)
+        // 90-degree Rotation
         NOODLES[this.selectedId].shape = NOODLES[this.selectedId].shape.map(([r, c]) => [c, -r]);
+        // Normalize coordinates to keep them positive
+        const minR = Math.min(...NOODLES[this.selectedId].shape.map(s => s[0]));
+        const minC = Math.min(...NOODLES[this.selectedId].shape.map(s => s[1]));
+        NOODLES[this.selectedId].shape = NOODLES[this.selectedId].shape.map(([r, c]) => [r - minR, c - minC]);
         this.refreshUI();
     }
 
     refreshUI() {
-        // Update Board
         document.querySelectorAll('.slot').forEach(s => {
             const [r, c] = s.dataset.pos.split(',').map(Number);
             const id = this.board[r][c];
             s.style.fill = id ? NOODLES[id].color : "#1a1a1a";
-            s.style.stroke = id ? "white" : "#333";
+            s.style.stroke = id ? "white" : "#444";
         });
 
-        // Update Tray
         const tray = document.getElementById('tray');
         tray.innerHTML = '';
         const used = new Set(this.board.flat());
@@ -170,7 +169,7 @@ class KanoodleEngine {
             if (!used.has(id)) {
                 const item = document.createElement('div');
                 item.className = `tray-item ${this.selectedId === id ? 'selected' : ''}`;
-                item.innerHTML = `<span class="piece-id">${id}</span><svg width="60" height="60" viewBox="-10 -10 100 100">${this.drawMini(id)}</svg>`;
+                item.innerHTML = `<svg width="50" height="50" viewBox="-5 -5 100 100">${this.drawMini(id)}</svg>`;
                 item.onclick = () => { this.selectedId = (this.selectedId === id) ? null : id; this.refreshUI(); };
                 tray.appendChild(item);
             }
@@ -179,14 +178,19 @@ class KanoodleEngine {
 
     drawMini(id) {
         return NOODLES[id].shape.map(([r, c]) => 
-            `<circle cx="${c*18+20}" cy="${r*18+20}" r="8" fill="${NOODLES[id].color}" stroke="white" stroke-width="1"/>`
+            `<circle cx="${c*20+15}" cy="${r*20+15}" r="12" fill="${NOODLES[id].color}" stroke="white" stroke-width="2"/>`
         ).join('');
     }
 
     loadLevel(key) {
         this.resetBoard();
-        const lvl = LEVELS[key];
-        if (lvl.fixed) lvl.fixed.forEach(([id, pos]) => this.place(id, pos[0], pos[1]));
+        if (key === 'empty') return;
+        const data = PUZZLE_DATA[key];
+        if (data) {
+            data.forEach(([id, pos]) => this.place(id, pos[0], pos[1]));
+        } else {
+            alert("Starting data for " + key + " is being transcribed. Choose 1, 9, or 13 for live testing.");
+        }
         this.refreshUI();
     }
 
