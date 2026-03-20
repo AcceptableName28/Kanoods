@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanoodle Digital Pro</title>
+    <style>
+        :root { --bg: #1a1a1a; --panel: #2d2d2d; --accent: #00ffcc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
+        
+        .header { margin-bottom: 20px; text-align: center; }
+        .game-area { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
+        
+        /* Board Styling */
+        #board { 
+            display: grid; grid-template-columns: repeat(11, 45px); grid-template-rows: repeat(5, 45px); 
+            gap: 4px; background: #333; padding: 10px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .cell { width: 45px; height: 45px; background: #444; border-radius: 50%; border: 2px inset #555; transition: 0.2s; }
+        .cell.occupied { border: 2px solid rgba(255,255,255,0.3); }
+
+        /* Piece Tray */
+        .tray { background: var(--panel); padding: 20px; border-radius: 12px; width: 250px; }
+        .piece-item { padding: 10px; margin: 5px; background: #444; cursor: grab; border-radius: 5px; text-align: center; font-weight: bold; }
+        .piece-item:hover { background: #555; }
+
+        /* Controls */
+        .controls { margin-top: 30px; display: flex; gap: 15px; }
+        button { 
+            padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; 
+            font-weight: bold; text-transform: uppercase; transition: 0.2s;
+        }
+        .btn-undo { background: #ff9800; color: white; }
+        .btn-redo { background: #2196f3; color: white; }
+        .btn-restart { background: #f44336; color: white; }
+        .btn-level { background: var(--accent); color: #000; }
+        button:hover { transform: translateY(-2px); opacity: 0.9; }
+        button:active { transform: translateY(0); }
+
+        select { padding: 10px; border-radius: 5px; background: #444; color: white; border: 1px solid var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>KANOODLE DIGITAL</h1>
+        <p>Level: <select id="levelSelect">
+            <option value="1">Level 1: Beginner</option>
+            <option value="2">Level 2: Intermediate</option>
+            <option value="3">Level 3: Advanced</option>
+            <option value="4">Level 4: Expert</option>
+        </select></p>
+    </div>
+
+    <div class="game-area">
+        <div id="board"></div>
+        <div class="tray">
+            <h3>Remaining Pieces</h3>
+            <div id="piece-list">
+                <div class="piece-item" draggable="true" style="color:#ff4444">PIECE A (L-Shape)</div>
+                <div class="piece-item" draggable="true" style="color:#44ff44">PIECE B (I-Shape)</div>
+                <div class="piece-item" draggable="true" style="color:#4444ff">PIECE C (T-Shape)</div>
+                <div class="piece-item" draggable="true" style="color:#ffff44">PIECE D (ZigZag)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-undo" onclick="game.undo()">Undo</button>
+        <button class="btn-redo" onclick="game.redo()">Redo</button>
+        <button class="btn-restart" onclick="game.restart()">Restart</button>
+        <button class="btn-level" onclick="game.checkWin()">Check Solution</button>
+    </div>
+
+    <script>
+        class KanoodleGame {
+            constructor() {
+                this.history = [];
+                this.redoStack = [];
+                this.boardState = Array(55).fill(null);
+                this.init();
+            }
+
+            init() {
+                const boardEl = document.getElementById('board');
+                boardEl.innerHTML = '';
+                for (let i = 0; i < 55; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.index = i;
+                    // Basic click-to-fill for demo purposes
+                    cell.onclick = () => this.placePiece(i);
+                    boardEl.appendChild(cell);
+                }
+            }
+
+            placePiece(index) {
+                this.saveState();
+                const colors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44', '#ff44ff'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                const cells = document.querySelectorAll('.cell');
+                cells[index].style.background = randomColor;
+                cells[index].classList.add('occupied');
+                this.redoStack = []; // Clear redo on new move
+            }
+
+            saveState() {
+                const currentState = Array.from(document.querySelectorAll('.cell')).map(c => ({
+                    color: c.style.background,
+                    occupied: c.classList.contains('occupied')
+                }));
+                this.history.push(currentState);
+            }
+
+            undo() {
+                if (this.history.length === 0) return;
+                const currentState = Array.from(document.querySelectorAll('.cell')).map(c => ({
+                    color: c.style.background,
+                    occupied: c.classList.contains('occupied')
+                }));
+                this.redoStack.push(currentState);
+                this.applyState(this.history.pop());
+            }
+
+            redo() {
+                if (this.redoStack.length === 0) return;
+                const currentState = Array.from(document.querySelectorAll('.cell')).map(c => ({
+                    color: c.style.background,
+                    occupied: c.classList.contains('occupied')
+                }));
+                this.history.push(currentState);
+                this.applyState(this.redoStack.pop());
+            }
+
+            applyState(state) {
+                const cells = document.querySelectorAll('.cell');
+                state.forEach((s, i) => {
+                    cells[i].style.background = s.color;
+                    if (s.occupied) cells[i].classList.add('occupied');
+                    else cells[i].classList.remove('occupied');
+                });
+            }
+
+            restart() {
+                if (confirm("Clear the board and restart this level?")) {
+                    this.history = [];
+                    this.redoStack = [];
+                    const cells = document.querySelectorAll('.cell');
+                    cells.forEach(c => {
+                        c.style.background = '';
+                        c.classList.remove('occupied');
+                    });
+                }
+            }
+
+            checkWin() {
+                alert("Logic Engine: Puzzle is being verified...");
+            }
+        }
+
+        const game = new KanoodleGame();
+    </script>
+</body>
+</html>
